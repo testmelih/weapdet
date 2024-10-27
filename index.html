@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Weapon Detection</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+</head>
+<body>
+    <h1>Live Weapon Detection</h1>
+    <div id="alert" style="color: red; font-weight: bold;"></div>
+    <img id="video-stream" src="" alt="Video stream loading...">
+
+    <script>
+        const socket = io.connect();
+
+        // Update video stream
+        socket.on('frame', function(data) {
+            document.getElementById('video-stream').src = 'data:image/jpeg;base64,' + data.image;
+        });
+
+        // Show alert on weapon detection
+        socket.on('alert', function(data) {
+            document.getElementById('alert').textContent = `Alert: Weapon detected - ${data.type}`;
+            setTimeout(() => document.getElementById('alert').textContent = '', 5000); // Clear alert after 5 seconds
+        });
+    </script>
+</body>
+</html>
