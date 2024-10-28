@@ -1,5 +1,4 @@
 import streamlit as st
-!pip install opencv-python 
 import cv2
 from ultralytics import YOLO
 from PIL import Image
