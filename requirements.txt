@@ -1,9 +1,5 @@
-ultralytics
-opencv-python
-torch
-numpy
-flask
-flask-socketio
-eventlet
-pyngrok
 streamlit
+streamlit-webrtc
+opencv-python-headless
+ultralytics
+pillow
