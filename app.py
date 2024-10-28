@@ -1,26 +1,39 @@
 import streamlit as st
 import cv2
 from ultralytics import YOLO
-from pyngrok import ngrok
+from PIL import Image
+import numpy as np
 
-st.title("Weapon Detection")
-st.text("Live feed weapon detection with alerts")
+# Load the YOLOv8 model
+model = YOLO('best.onnx')  # Replace with the path to your trained model
 
-# Load the YOLO model
-model = YOLO("/content/best.pt")
+# Streamlit web app title
+st.title("Live Webcam Weapon Detection")
 
-# Stream video
-camera = cv2.VideoCapture(0)
+# Start capturing the video from webcam
+st.write("Starting video stream...")
+run = st.checkbox('Run')
+FRAME_WINDOW = st.image([])
 
-while True:
-    ret, frame = camera.read()
+cap = cv2.VideoCapture(0)  # 0 is usually the default webcam
+
+while run:
+    # Read a frame from the webcam
+    ret, frame = cap.read()
     if not ret:
+        st.write("Failed to capture image")
         break
-    results = model(frame)
-    # Display detections and alert if weapon detected
-    for result in results:
-        st.image(result.plot())
-        if result.label in ["Knife", "Handgun"]:
-            st.warning(f"Weapon detected: {result.label}")
 
-camera.release()
+    # Convert the frame (OpenCV format) to PIL image format for YOLOv8 model
+    pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+    # Perform object detection
+    results = model.predict(pil_img)
+
+    # Plot bounding boxes on the frame
+    annotated_frame = results[0].plot()  # Annotated frame with bounding boxes
+
+    # Convert frame for displaying in Streamlit
+    FRAME_WINDOW.image(annotated_frame)
+
+cap.release()
