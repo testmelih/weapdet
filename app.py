@@ -1,39 +1,43 @@
 import streamlit as st
-import cv2
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
 from ultralytics import YOLO
-from PIL import Image
+import cv2
 import numpy as np
 
 # Load the YOLOv8 model
-model = YOLO('best.onnx')  # Replace with the path to your trained model
+model = YOLO('best.onnx')  # Replace with your model path
 
-# Streamlit web app title
-st.title("Live Webcam Weapon Detection")
+st.title("Web-Based Live Camera Weapon Detection")
+st.write("This app can be accessed on both desktop and mobile devices with a live camera feed.")
 
-# Start capturing the video from webcam
-st.write("Starting video stream...")
-run = st.checkbox('Run')
-FRAME_WINDOW = st.image([])
+# Define a custom video transformer for WebRTC
+class YOLOv8Transformer(VideoTransformerBase):
+    def __init__(self):
+        # Load the YOLO model
+        self.model = model
 
-cap = cv2.VideoCapture(0)  # 0 is usually the default webcam
+    def transform(self, frame):
+        # Convert frame to a format compatible with PIL
+        img = frame.to_ndarray(format="bgr24")
 
-while run:
-    # Read a frame from the webcam
-    ret, frame = cap.read()
-    if not ret:
-        st.write("Failed to capture image")
-        break
+        # Convert OpenCV BGR image to RGB
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        # Perform object detection
+        results = self.model.predict(img_rgb)
+        
+        # Draw bounding boxes on the image
+        annotated_img = results[0].plot()
+        
+        # Convert RGB image back to BGR for OpenCV display
+        annotated_img_bgr = cv2.cvtColor(annotated_img, cv2.COLOR_RGB2BGR)
+        
+        return annotated_img_bgr
 
-    # Convert the frame (OpenCV format) to PIL image format for YOLOv8 model
-    pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-
-    # Perform object detection
-    results = model.predict(pil_img)
-
-    # Plot bounding boxes on the frame
-    annotated_frame = results[0].plot()  # Annotated frame with bounding boxes
-
-    # Convert frame for displaying in Streamlit
-    FRAME_WINDOW.image(annotated_frame)
-
-cap.release()
+# Setup WebRTC streamer for live video
+webrtc_streamer(
+    key="weapon-detection",
+    mode=WebRtcMode.SENDRECV,
+    video_transformer_factory=YOLOv8Transformer,
+    media_stream_constraints={"video": True, "audio": False},
+)
